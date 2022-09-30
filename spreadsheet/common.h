@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <iosfwd>
 #include <memory>
@@ -12,6 +12,9 @@
 struct Position {
     int row = 0;
     int col = 0;
+
+    Position& SetRow(int new_row);
+    Position& SetCol(int new_col);
 
     bool operator==(Position rhs) const;
     bool operator<(Position rhs) const;
@@ -37,9 +40,9 @@ struct Size {
 class FormulaError {
 public:
     enum class Category {
-        Ref,    // ссылка на ячейку с некорректной позицией
-        Value,  // ячейка не может быть трактована как число
-        Div0,  // в результате вычисления возникло деление на ноль
+        Ref,     // ссылка на ячейку с некорректной позицией
+        Value,   // ячейка не может быть трактована как число
+        Div0,    // в результате вычисления возникло деление на ноль
     };
 
     FormulaError(Category category);

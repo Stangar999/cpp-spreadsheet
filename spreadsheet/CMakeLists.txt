@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+﻿cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(spreadsheet)
 
 set(CMAKE_CXX_STANDARD 17)
+#set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(
     CMAKE_CXX_FLAGS_DEBUG
@@ -10,11 +12,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 else()
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror -Wno-unused-parameter -Wno-implicit-fallthrough"
+    "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-implicit-fallthrough"
   )
 endif()
 
-
+# -Werror
 set(ANTLR_EXECUTABLE ${CMAKE_CURRENT_SOURCE_DIR}/antlr-4.7.2-complete.jar)
 include(${CMAKE_CURRENT_SOURCE_DIR}/FindANTLR.cmake)
 
@@ -43,9 +45,12 @@ add_executable(
   spreadsheet
   ${ANTLR_FormulaParser_CXX_OUTPUTS}
   ${sources}
-)
-
-target_link_libraries(spreadsheet antlr4_static)
+  )
+#Threads::Threads
+target_link_libraries(spreadsheet Threads::Threads antlr4_static)
+#if(MSVC)
+#  target_compile_options(antlr4_static PRIVATE /W0)
+#endif()
 
 install(
   TARGETS spreadsheet

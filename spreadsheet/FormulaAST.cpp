@@ -1,4 +1,4 @@
-#include "FormulaAST.h"
+﻿#include "FormulaAST.h"
 
 #include "FormulaBaseListener.h"
 #include "FormulaLexer.h"
@@ -72,7 +72,7 @@ public:
     virtual ~Expr() = default;
     virtual void Print(std::ostream& out) const = 0;
     virtual void DoPrintFormula(std::ostream& out, ExprPrecedence precedence) const = 0;
-    virtual double Evaluate(/*добавьте сюда нужные аргументы*/ args) const = 0;
+    virtual double Evaluate(const SheetInterface& sheet) const = 0;
 
     // higher is tighter
     virtual ExprPrecedence GetPrecedence() const = 0;
@@ -142,8 +142,36 @@ public:
         }
     }
 
-    double Evaluate(/*добавьте нужные аргументы*/) const override {
-			// Скопируйте ваше решение из предыдущих уроков.
+// При делении на 0 выбрасывайте ошибку вычисления FormulaError
+    double Evaluate(const SheetInterface& sheet) const override {
+        double lhs = lhs_->Evaluate(sheet);
+        double rhs = rhs_->Evaluate(sheet);
+        switch (type_) {
+        case Add:
+            if(SafeAdd(lhs, rhs)) {
+                return lhs + rhs;
+            }
+            throw FormulaError(FormulaError::Category::Div0);
+        case Subtract:
+            if(SafeSubtract(lhs, rhs)) {
+                return lhs - rhs;
+            }
+            throw FormulaError(FormulaError::Category::Div0);
+        case Multiply:
+            if(SafeMultiply(lhs, rhs)) {
+                return lhs * rhs;
+            }
+            throw FormulaError(FormulaError::Category::Div0);
+        case Divide:
+            if(std::abs(rhs) < std::numeric_limits<double>::epsilon()) {
+                throw FormulaError(FormulaError::Category::Div0);
+            }
+            return lhs / rhs;
+        default:
+            // have to do this because VC++ has a buggy warning
+            assert(false);
+            return 0;
+        }
     }
 
 private:
@@ -180,8 +208,13 @@ public:
         return EP_UNARY;
     }
 
-    double Evaluate(/*добавьте нужные аргументы*/ args) const override {
-        // Скопируйте ваше решение из предыдущих уроков.
+    double Evaluate(const SheetInterface& sheet) const override {
+        switch (type_) {
+        case UnaryMinus:
+            return -operand_->Evaluate(sheet);
+        default:
+            return operand_->Evaluate(sheet);
+        }
     }
 
 private:
@@ -211,8 +244,29 @@ public:
         return EP_ATOM;
     }
 
-    double Evaluate(/*добавьте нужные аргументы*/ args) const override {
-        // реализуйте метод.
+    double Evaluate(const SheetInterface& sheet) const override {
+        std::ostringstream out;
+        // если ячейки еще нет или она в не таблицы
+//        if(! cell_->IsValid() ) {
+//            throw FormulaError(FormulaError::Category::Ref);
+//        }
+        if(sheet.GetCell(*cell_) == nullptr) {
+            return 0;
+        }
+        std::visit([&out](const auto &elem)
+        { out << elem; }
+        , sheet.GetCell(*cell_)->GetValue());
+        // если ячейка пустая ее значение в формуле 0
+        if(out.str().empty()) {
+            return 0;
+        }
+        // проверка что текст в ячейке можно полностью преобразовать в double
+        char* p;
+        double result = strtod(out.str().c_str(), &p);
+        if(*p == 0) {
+            return result;
+        }
+        throw FormulaError(FormulaError::Category::Value);
     }
 
 private:
@@ -237,7 +291,7 @@ public:
         return EP_ATOM;
     }
 
-    double Evaluate(/*добавьте нужные аргументы*/ args) const override {
+    double Evaluate(const SheetInterface& sheet) const override {
         return value_;
     }
 
@@ -364,8 +418,12 @@ FormulaAST ParseFormulaAST(std::istream& in) {
     auto error_handler = std::make_shared<BailErrorStrategy>();
     parser.setErrorHandler(error_handler);
     parser.removeErrorListeners();
-
-    tree::ParseTree* tree = parser.main();
+    tree::ParseTree* tree;
+    try {
+        tree = parser.main();
+    } catch (...) {
+        throw FormulaException("tree::ParseTree* tree = parser.main() ""Invalid position: ");
+    }
     ASTImpl::ParseASTListener listener;
     tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
@@ -391,8 +449,8 @@ void FormulaAST::PrintFormula(std::ostream& out) const {
     root_expr_->PrintFormula(out, ASTImpl::EP_ATOM);
 }
 
-double FormulaAST::Execute(/*добавьте нужные аргументы*/ args) const {
-    return root_expr_->Evaluate(/*добавьте нужные аргументы*/ args);
+double FormulaAST::Execute(const SheetInterface& sheet) const {
+    return root_expr_->Evaluate(sheet);
 }
 
 FormulaAST::FormulaAST(std::unique_ptr<ASTImpl::Expr> root_expr, std::forward_list<Position> cells)

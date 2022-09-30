@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "FormulaLexer.h"
 #include "common.h"
@@ -23,7 +23,7 @@ public:
     FormulaAST& operator=(FormulaAST&&) = default;
     ~FormulaAST();
 
-    double Execute(/*добавьте нужные аргументы*/ args) const;
+    double Execute(const SheetInterface& sheet) const;
     void PrintCells(std::ostream& out) const;
     void Print(std::ostream& out) const;
     void PrintFormula(std::ostream& out) const;
@@ -47,3 +47,43 @@ private:
 
 FormulaAST ParseFormulaAST(std::istream& in);
 FormulaAST ParseFormulaAST(const std::string& in_str);
+
+template <typename T>
+bool SafeAdd(T a, T b) {
+    if(a >= 0 && b >= 0) {
+        if(a > std::numeric_limits<T>::max() - b) {
+            return false;
+        }
+    } else if (a < 0 && b < 0) {
+        if(a < std::numeric_limits<T>::min() - b) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename T>
+bool SafeSubtract(T a, T b) {
+    if(a >= 0 && b <= 0) {
+        if(a > std::numeric_limits<T>::max() + b) {
+            return false;
+        }
+    } else if (a < 0 && b > 0) {
+        if(a < std::numeric_limits<T>::min() + b) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename T>
+bool SafeMultiply(T a, T b) {
+    // если b = 0
+    if(std::abs(b) < std::numeric_limits<double>::epsilon()) {
+        return true;
+    }
+    if(std::abs(a) > std::numeric_limits<T>::max() / std::abs(b)) {
+        return false;
+    }
+    return true;
+}
