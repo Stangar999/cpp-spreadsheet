@@ -25,11 +25,11 @@ void Sheet::SetCell(Position pos, std::string text) {
     Cell cell(text, this);
     // присваиваем список всех ячеек которые зависят от этой позиции новой ячейке
     cell.GetReferencedBackCells() = table_[pos.row][pos.col].GetReferencedBackCells();
-    // перед проверкой на цикличность надо сбросить флаг провереного кеша у требуемой ветви
-    InValidedFlagCicl(cell.GetReferencedBackCells());
+    // перед проверкой на цикличность надо сбросить флаг провереной цикличности у зависимых ячеек
+    InValidedFlagCicle(cell.GetReferencedBackCells());
     // проверка на цикличность
-    CheckOnCicl(&cell, pos);
-    // инвалидируем кеш и флаг проверки на цикл для зависимых ячеек
+    CheckOnCicle(&cell, pos);
+    // инвалидируем кеш для зависимых ячеек
     InValidedCache(cell.GetReferencedBackCells());
     // если в формуле использовались еще не заданные ячейки
     for(Position pos_in_ref : cell.GetReferencedCells()) {
@@ -113,23 +113,23 @@ void Sheet::CheckPos(Position pos) const {
     }
 }
 
-void Sheet::CheckOnCicl(CellInterface* current_cell, Position main_pos) {
-    Cell* cur_cell = dynamic_cast<Cell*>(current_cell);
+void Sheet::CheckOnCicle(CellInterface* current_cell_intr, Position main_pos) {
+    Cell* current_cell = dynamic_cast<Cell*>(current_cell_intr);
     // Случай когда "A1"_pos, "=B2" а B2 никто не создал
     // чтобы не портить таблицу до проверки на цикличность
-    if(cur_cell == nullptr) {
+    if(current_cell == nullptr) {
         return;
     }
-    if(cur_cell->GetFlagIsNotCicl() == std::nullopt) {
-        for(const Position& pos : current_cell->GetReferencedCells() ) {
+    if(current_cell->GetFlagIsNotCicl() == std::nullopt) {
+        for(const Position& pos : current_cell_intr->GetReferencedCells() ) {
             if(main_pos == pos) {
                 throw CircularDependencyException("FALSE IsCicl");
             }
             CellInterface* cur_cell = GetCell(pos);
-            CheckOnCicl(cur_cell, main_pos);
+            CheckOnCicle(cur_cell, main_pos);
         }
         // если не выпали с исключением значит для этой ячейки цикла нет
-        cur_cell->GetFlagIsNotCicl() = true;
+        current_cell->GetFlagIsNotCicl() = true;
     }
 }
 
@@ -146,12 +146,12 @@ void Sheet::ClearCellFromOldBackRefs(const std::vector<Position>& vec_pos_cel, P
     }
 }
 
-void Sheet::InValidedFlagCicl(const std::set<Position>& set_pos_back_cel) {
+void Sheet::InValidedFlagCicle(const std::set<Position>& set_pos_back_cel) {
     for(const auto pos_curr : set_pos_back_cel) {
         Cell* cell = dynamic_cast<Cell*>(GetCell(pos_curr));
         if(cell->GetFlagIsNotCicl()) {
             cell->GetFlagIsNotCicl() = std::nullopt;
-            InValidedFlagCicl(cell->GetReferencedBackCells());
+            InValidedFlagCicle(cell->GetReferencedBackCells());
         }
 
     }

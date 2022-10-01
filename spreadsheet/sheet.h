@@ -20,10 +20,10 @@ public:
 
 private:
     void CheckPos(Position pos) const;
-    void CheckOnCicl(CellInterface* cur_cell, Position main_pos);
+    void CheckOnCicle(CellInterface* cur_cell, Position main_pos);
     void FillBackRefsInCell(const std::vector<Position>& vec_pos_cel, Position pos);
     void ClearCellFromOldBackRefs(const std::vector<Position>& vec_pos_cel, Position pos);
-    void InValidedFlagCicl(const std::set<Position>& set_pos_back_cel);
+    void InValidedFlagCicle(const std::set<Position>& set_pos_back_cel);
     void InValidedCache(const std::set<Position>& set_pos_back_cel);
     void CheckPosAndResizeTable(Position pos);
     bool PosRowMoreTableRow(Position pos);

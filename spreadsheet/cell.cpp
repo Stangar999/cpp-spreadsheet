@@ -83,7 +83,7 @@ Cell::Value Cell::GetValue() const {
         const std::string& str = std::get<std::string>(impl->str_);
         if(str[0] == ESCAPE_SIGN) {
             cache_ = str.substr(1);
-            return str.substr(1);
+            return cache_.value();
         }
         cache_ = str;
         return str;
