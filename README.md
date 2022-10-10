@@ -21,7 +21,7 @@
 2) ANTLR 4.7.2 уже необходимый файл лежит с проектом, дополнительно ничего делать не нужно 
 3) ANTLR 4 C++ Runtime необходимый файл лежит с проектом, дополнительно ничего делать не нужно 
 
-
+~~~
 // создать таблицу
 auto sheet = CreateSheet();
 // наполнить таблицу значениями
@@ -34,3 +34,4 @@ sheet->SetCell("A4"_pos, "=A2 + 10");
 // получить значение в ячейках
 ASSERT_EQUAL(sheet->GetCell("M6"_pos)->GetText(), "Ready");
 ASSERT_EQUAL(std::get<double>(sheet->GetCell("A4"_pos)->GetValue()), 20.0);
+~~~
